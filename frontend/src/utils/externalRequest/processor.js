@@ -1,4 +1,4 @@
-import { decryptExternalData } from '../encryption';
+import { decryptExternalData, encryptData} from '../encryption';
 import { validateExternalRequest } from './validator';
 import { checkReferenceNumber } from '../../services/api';
 

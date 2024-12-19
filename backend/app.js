@@ -5,6 +5,7 @@ const imagesRoutes = require('./routes/images');
 const damageAnnotationsRoutes = require('./routes/damageAnnotations');
 const carPartsRoutes = require('./routes/carParts');
 const reportsRoutes = require('./routes/reports');
+const damageAssessmentsRoutes = require('./routes/damageAssessments');
 require('dotenv').config();
 
 const app = express();
@@ -25,6 +26,7 @@ app.use('/api/images', imagesRoutes);
 app.use('/api/damageAnnotations', damageAnnotationsRoutes);
 app.use('/api/carParts', carPartsRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/damageAssessments', damageAssessmentsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

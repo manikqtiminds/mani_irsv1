@@ -30,7 +30,7 @@ const useInspectionStore = create((set, get) => ({
 
       const formattedImages = imagesData.map((image) => ({
         ...image,
-        referenceNo, // Add referenceNo to each image
+        referenceNo,
         imageName: image.imageName,
         imageUrl: image.imageUrl,
         dimensions: image.dimensions || { width: 1, height: 1 },
@@ -65,6 +65,7 @@ const useInspectionStore = create((set, get) => ({
   },
 
   updateDamageInfo: (newDamage) => {
+    console.log('Adding new damage:', newDamage);
     const { currentImageIndex, images } = get();
     const updatedImages = [...images];
     const currentImage = { ...updatedImages[currentImageIndex] };
@@ -81,6 +82,7 @@ const useInspectionStore = create((set, get) => ({
     
     updatedImages[currentImageIndex] = currentImage;
     
+    console.log('Updated damage info:', currentImage.damageInfo);
     set({
       images: updatedImages,
       currentImage: currentImage,
@@ -88,13 +90,32 @@ const useInspectionStore = create((set, get) => ({
   },
 
   deleteDamageInfo: (index) => {
+    console.log('Store: Deleting damage at index:', index);
     const { currentImageIndex, images } = get();
-    const updatedImages = [...images];
-    const currentImage = { ...updatedImages[currentImageIndex] };
     
+    // Log current state
+    console.log('Store: Current state before deletion:', {
+      currentImageIndex,
+      currentDamageInfo: images[currentImageIndex]?.damageInfo
+    });
+    
+    // Create deep copies to ensure state updates
+    const updatedImages = [...images];
+    const currentImage = { 
+      ...updatedImages[currentImageIndex],
+      damageInfo: [...(updatedImages[currentImageIndex].damageInfo || [])]
+    };
+    
+    // Remove the damage marking at the specified index
     currentImage.damageInfo = currentImage.damageInfo.filter((_, i) => i !== index);
     updatedImages[currentImageIndex] = currentImage;
     
+    console.log('Store: Updated state after deletion:', {
+      damageInfo: currentImage.damageInfo,
+      totalDamages: currentImage.damageInfo.length
+    });
+    
+    // Update both images array and currentImage to ensure consistency
     set({
       images: updatedImages,
       currentImage: currentImage,

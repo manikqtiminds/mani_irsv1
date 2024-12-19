@@ -12,7 +12,7 @@ export function debugDecryption(encryptedBase64) {
         base64Ciphertext: encryptedBase64
       });
   
-      // Try multiple decryption approaches
+      // Trying multiple decryption approaches
       const approaches = [
         { padding: CryptoJS.pad.Pkcs7, encoding: CryptoJS.enc.Utf8 },
         { padding: CryptoJS.pad.NoPadding, encoding: CryptoJS.enc.Utf8 },

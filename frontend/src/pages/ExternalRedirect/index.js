@@ -13,19 +13,19 @@ export default function ExternalRedirect() {
     const handleExternalRequest = async () => {
       try {
         const params = new URLSearchParams(location.search);
-        const encryptedRef = params.get('ref');
-
-        console.log('Raw encrypted ref:', encryptedRef);
+        const encryptedRef = params.get('ref') || params.get('data');
 
         if (!encryptedRef) {
           throw new Error('No reference number provided');
         }
 
+        console.log('Processing external reference:', encryptedRef);
+        
         const result = await ExternalService.processExternalReference(encryptedRef);
         
         if (result.success) {
           // Navigate to review page with internal encryption
-          navigate(`/review?data=${encodeURIComponent(result.encryptedRef)}`);
+          navigate(`/review-update?data=${encodeURIComponent(result.encryptedRef)}`, { replace: true });
         } else {
           throw new Error(result.error || 'Failed to process reference number');
         }
@@ -36,6 +36,7 @@ export default function ExternalRedirect() {
         // Show error for 3 seconds before redirecting
         setTimeout(() => {
           navigate('/', { 
+            replace: true,
             state: { error: error.message }
           });
         }, 3000);

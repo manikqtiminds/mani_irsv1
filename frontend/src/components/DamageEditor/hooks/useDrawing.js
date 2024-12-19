@@ -1,15 +1,29 @@
-import { useState, useCallback, useEffect } from 'react';
-import { normalizeRect } from '../utils';
+import { useState, useRef, useCallback } from 'react';
+import { getScaledPoint } from '../utils/drawingUtils';
 
-export function useDrawing({ onSave }) {
-  const [isDrawing, setIsDrawing] = useState(false);
+export function useDrawing({ onSave, scale, position, currentImage, isDrawingMode }) {
   const [startPoint, setStartPoint] = useState(null);
   const [currentRect, setCurrentRect] = useState(null);
   const [selectedDamageType, setSelectedDamageType] = useState(0);
+  const drawingRef = useRef(false);
+  const containerRef = useRef(null);
 
-  const startDrawing = useCallback((point) => {
-    console.log('Starting drawing at:', point);
-    setIsDrawing(true);
+  const startDrawing = useCallback((e) => {
+    if (!isDrawingMode) return;
+    e.preventDefault();
+    
+    const point = getScaledPoint(
+      e.type.includes('touch') ? e.touches[0].clientX : e.clientX,
+      e.type.includes('touch') ? e.touches[0].clientY : e.clientY,
+      containerRef.current,
+      scale,
+      position,
+      currentImage
+    );
+    
+    if (!point) return;
+    
+    drawingRef.current = true;
     setStartPoint(point);
     setCurrentRect({
       x: point.x,
@@ -18,65 +32,64 @@ export function useDrawing({ onSave }) {
       height: 0,
       damageType: selectedDamageType
     });
-  }, [selectedDamageType]);
+  }, [isDrawingMode, selectedDamageType, scale, position, currentImage]);
 
-  const updateDrawing = useCallback((point) => {
-    if (!isDrawing || !startPoint) {
-      console.log('Cannot update drawing:', { hasStartPoint: !!startPoint, isDrawing });
-      return;
-    }
+  const updateDrawing = useCallback((e) => {
+    if (!drawingRef.current || !startPoint) return;
+    e.preventDefault();
+    
+    const point = getScaledPoint(
+      e.type.includes('touch') ? e.touches[0].clientX : e.clientX,
+      e.type.includes('touch') ? e.touches[0].clientY : e.clientY,
+      containerRef.current,
+      scale,
+      position,
+      currentImage
+    );
+    
+    if (!point) return;
 
     setCurrentRect(prev => ({
       ...prev,
       width: point.x - startPoint.x,
       height: point.y - startPoint.y
     }));
-  }, [isDrawing, startPoint]);
+  }, [startPoint, scale, position, currentImage]);
 
   const finishDrawing = useCallback(() => {
-    if (!isDrawing || !currentRect) {
-      console.log('Cannot finish drawing:', { hasCurrentRect: !!currentRect, isDrawing });
-      return;
+    if (!drawingRef.current || !currentRect) return;
+    drawingRef.current = false;
+
+    // Only save if the rectangle is large enough
+    if (Math.abs(currentRect.width) > 10 && Math.abs(currentRect.height) > 10) {
+      const normalizedRect = {
+        x: currentRect.width < 0 ? currentRect.x + currentRect.width : currentRect.x,
+        y: currentRect.height < 0 ? currentRect.y + currentRect.height : currentRect.y,
+        width: Math.abs(currentRect.width),
+        height: Math.abs(currentRect.height),
+        damageType: currentRect.damageType
+      };
+      onSave(normalizedRect);
     }
 
-    const normalized = normalizeRect(currentRect);
-    if (normalized.width > 10 && normalized.height > 10) {
-      console.log('Saving drawing:', normalized);
-      onSave(normalized);
-    } else {
-      console.log('Drawing too small, discarding');
-    }
-
-    setIsDrawing(false);
     setCurrentRect(null);
     setStartPoint(null);
-  }, [isDrawing, currentRect, onSave]);
+  }, [currentRect, onSave]);
 
-  // Handle global mouse up to ensure drawing finishes even if mouse leaves canvas
-  useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      if (isDrawing) {
-        console.log('Global mouse up detected');
-        finishDrawing();
-      }
-    };
-
-    window.addEventListener('mouseup', handleGlobalMouseUp);
-    return () => {
-      window.removeEventListener('mouseup', handleGlobalMouseUp);
-      setIsDrawing(false);
-      setCurrentRect(null);
-      setStartPoint(null);
-    };
-  }, [isDrawing, finishDrawing]);
+  const cleanup = useCallback(() => {
+    drawingRef.current = false;
+    setCurrentRect(null);
+    setStartPoint(null);
+  }, []);
 
   return {
-    isDrawing,
+    containerRef,
     currentRect,
     selectedDamageType,
     setSelectedDamageType,
     startDrawing,
     updateDrawing,
-    finishDrawing
+    finishDrawing,
+    cleanup
   };
 }
